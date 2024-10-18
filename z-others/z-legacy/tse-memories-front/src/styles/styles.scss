@@ -1,0 +1,19 @@
+//Base styles and settings
+@import "./base/base";
+@import "./base/setting";
+
+//Styles for components
+@import "./components/loader/loader";
+
+//Styles for pages
+@import "./pages/login/loginPage";
+@import "./pages/home/homePage";
+@import "./pages/home/noMemorySelected";
+@import "./pages/home/sidebar";
+@import "./pages/home/memoryEntries";
+@import "./pages/home/memoryEntry";
+@import "./pages/home/memoryActualizationForm";
+@import "./components/loader/loader";
+@import "./components/errorFlag/errorFlag";
+@import "./pages/home/memoryView";
+@import "./pages/home/searchPanel";
