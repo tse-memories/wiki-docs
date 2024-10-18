@@ -1,0 +1,3 @@
+Separar tabla de fotos de MemoryLocation
+
+Evaluar relación MemoryDetail
