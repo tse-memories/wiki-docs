@@ -1,0 +1,179 @@
+version: "3.7"
+
+volumes:
+  rabbitmq_data:
+    driver: local
+  postgres_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+networks:
+  tse-memories-network:
+    driver: bridge
+    name: tse-memories-network
+
+services:
+  rabbitmq:
+    image: rabbitmq:3.6-management-alpine
+    container_name: tse-rabbitmq
+    restart: always
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+      RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VHOST}
+      TZ: America/Bogota
+    volumes:
+      - ./x-docker-volumes/rabbitmq:/var/lib/rabbitmq/mnesia
+    ports:
+      - "5675:5672"
+      - "15675:15672"
+    networks:
+      - tse-memories-network
+
+  postgres:
+    image: postgres:16.3
+    container_name: tse-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: memories_db
+      TZ: America/Bogota
+    volumes:
+      - ./x-docker-volumes/postgres/data:/var/lib/postgresql/data
+    ports:
+      - "5434:5432"
+    networks:
+      - tse-memories-network
+
+  elastic-search:
+    image: elasticsearch:7.17.23
+    container_name: tse-elastic-search
+    restart: always
+    environment:
+      - discovery.type=single-node
+    ports:
+      - "9200:9200"
+    networks:
+      - tse-memories-network
+
+  # prometheus:
+  #   image: prom/prometheus:v2.53.1
+  #   container_name: tse-prometheus
+  #   restart: always
+  #   networks:
+  #     - tse-memories-network
+  #   ports:
+  #     - "9090:9090"
+  #   volumes:
+  #     - "./x-docker-volumes/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml"
+  #     - ./x-docker-volumes/prometheus:/prometheus
+  #   command: "--config.file=/etc/prometheus/prometheus.yml" # Check if this is necessary or not.
+
+  # grafana:
+  #   image: grafana/grafana:7.1.5
+  #   container_name: tse-grafana
+  #   volumes:
+  #     - ./x-docker-volumes/grafana:/var/lib/grafana
+  #     - ./grafana/provisioning:/etc/grafana/provisioning
+  #   environment:
+  #     - GF_AUTH_DISABLE_LOGIN_FORM=true
+  #     - GF_AUTH_ANONYMOUS_ENABLED=true
+  #     - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+  #   ports:
+  #     - 3000:3000
+  #   networks:
+  #     - tse-memories-network
+
+  # application-gateway:
+  #   image: juancamilocardona11/tse-application-gateway:1.0.0
+  #   container_name: tse-memories-application-gateway
+  #   build:
+  #     context: ./application-gateway
+  #     dockerfile: ./Dockerfile
+  #   restart: always
+  #   ports:
+  #     - 3000:3000
+  #   networks:
+  #     - tse-memories-network
+  #   depends_on:
+  #     - rabbitmq
+  #   environment:
+  #     PORT: 3000
+  #     APP_NAME: epl-application-gateway
+  #     METRICS_PORT: 7777
+  #     TZ: America/Bogota
+  #     NOTIFICATIONS_MANAGEMENT_URL: http://notifications-management:3500
+  #     USERS_MANAGEMENT_URL: http://users-management:3600
+  #     MEMORIES_MANAGEMENT_URL: http://memories-management:3700
+
+  # notifications-management:
+  #   image: juancamilocardona11/tse-notifications-management:1.0.0
+  #   container_name: tse-memories-notifications-management
+  #   build:
+  #     context: ./notifications-management
+  #     dockerfile: ./Dockerfile
+  #   restart: always
+  #   ports:
+  #     - "3400:3400"
+  #   networks:
+  #     - tse-memories-network
+  #   depends_on:
+  #     - rabbitmq
+  #     - postgres
+  #   environment:
+  #     PORT: 3400
+  #     APP_NAME: epl-notifications-management
+  #     METRICS_PORT: 7777
+
+  # users-management:
+  #   image: juancamilocardona11/tse-users-management:1.0.0
+  #   container_name: tse-memories-users-management
+  #   build:
+  #     context: ./users-management
+  #     dockerfile: ./Dockerfile
+  #   restart: always
+  #   ports:
+  #     - "3500:3500"
+  #   networks:
+  #     - tse-memories-network
+  #   depends_on:
+  #     - rabbitmq
+  #     - postgres
+  #   environment:
+  #     PORT: 3500
+  #     APP_NAME: epl-users-management
+  #     METRICS_PORT: 7777
+  #     DATABASE_URI: ${POSTGRES_URI}
+  #     RABBIT_URI: ${RABBIT_URI}
+  #     RABBIT_USERS_EXCHANGE: users.exchange
+  #     RABBIT_USERS_EXCHANGE_TYPE: direct
+
+  # memories-management:
+  #   image: juancamilocardona11/tse-memories-management:1.0.0
+  #   container_name: tse-memories-memories-management
+  #   build:
+  #     context: ./memories-management
+  #     dockerfile: ./Dockerfile
+  #   restart: always
+  #   ports:
+  #     - "3600:3600"
+  #   networks:
+  #     - tse-memories-network
+  #   depends_on:
+  #     - rabbitmq
+  #     - postgres
+  #   environment:
+  #     PORT: 3600
+  #     APP_NAME: epl-memories-management
+  #     METRICS_PORT: 7777
+  #     DATABASE_URI: ${POSTGRES_URI}
+  #     RABBIT_URI: ${RABBIT_URI}
+  #     RABBIT_USERS_EXCHANGE: memories.exchange
+  #     RABBIT_USERS_EXCHANGE_TYPE: direct
+  #     RABBIT_OUTGOING_VENTURE_CREATED_QUEUE: memories.memory.created
+  #     RABBIT_OUTGOING_VENTURE_EVENT_CREATED_QUEUE: memories.memory.updated
+  #     RABBIT_OUTGOING_VENTURE_EVENT_UPDATED_QUEUE: memories.memory.updated
